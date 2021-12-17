@@ -1,19 +1,50 @@
 use eframe::{
-    egui::{self, Color32, FontDefinitions, FontFamily},
+    egui::{self, Color32, FontDefinitions, FontFamily, SidePanel},
     epi,
+};
+
+use crate::{
+    dict_manage::{Dict, Familiarity},
+    dictcn,
+    word::{self, Word},
 };
 const PADDING: f32 = 5.;
 const CYAN: Color32 = Color32::from_rgb(0, 255, 255);
-#[derive(Default)]
 pub struct ShengCiApp {
+    new_word_dict: Dict,
+    familiarity_dict: Dict,
+    memorized_dict: Dict,
     capture_word: String,
+    setting: bool,
 }
 impl ShengCiApp {
-    fn new(self) -> ShengCiApp {
+    pub fn new() -> ShengCiApp {
         ShengCiApp {
+            new_word_dict: Dict::new(Familiarity::NewWord).unwrap(),
             capture_word: Default::default(),
+            familiarity_dict: Dict::new(Familiarity::Familiarity).unwrap(),
+            memorized_dict: Dict::new(Familiarity::MemorizedDict).unwrap(),
+            setting: false,
         }
     }
+    fn render_plot(
+        &self,
+        id: &String,
+        distribution_data: &Vec<(u8, Vec<(i64, String)>)>,
+        ui: &mut egui::Ui,
+    ) {
+        // let sin = (0..1000).map(|i| {
+        //     let x = i as f64 * 0.01;
+        //     Value::new(x, x.sin())
+        // });
+        // let distribution_sin = (0..distribution_data.len()).map(|i| {
+        //     let x = i as f32 * 0.01;
+        //     Value::new(i as f64, x.sin())
+        // });
+        // let line = Line::new(Values::from_values_iter(distribution_sin));
+        // ui.add(Plot::new(id).vline(vline));
+    }
+    fn render_dict_list(&self, id: &String, ui: &mut egui::Ui) {}
     fn configura_font(&self, ctx: &egui::CtxRef) {
         // Load font file with bytes reader.
         let my_font = include_bytes!("../SourceHanMonoSC-Normal.otf");
@@ -32,24 +63,31 @@ impl ShengCiApp {
             .fonts_for_family
             .get_mut(&egui::FontFamily::Monospace)
             .unwrap()
-            .insert(0, "my_font".to_owned());
+            .insert(1, "my_font".to_owned());
         // 设定Headling
         fonts
             .family_and_size
-            .insert(egui::TextStyle::Heading, (FontFamily::Proportional, 30.0));
+            .insert(egui::TextStyle::Heading, (FontFamily::Proportional, 25.0));
         fonts
             .family_and_size
-            .insert(egui::TextStyle::Heading, (FontFamily::Monospace, 30.0));
+            .insert(egui::TextStyle::Heading, (FontFamily::Monospace, 25.0));
         fonts
             .family_and_size
-            .insert(egui::TextStyle::Body, (FontFamily::Proportional, 25.0));
+            .insert(egui::TextStyle::Body, (FontFamily::Proportional, 20.0));
         fonts
             .family_and_size
-            .insert(egui::TextStyle::Body, (FontFamily::Monospace, 25.0));
+            .insert(egui::TextStyle::Body, (FontFamily::Monospace, 20.0));
         ctx.set_fonts(fonts);
     }
-    fn handle_capture_word(&self, ctx: &egui::CtxRef) {
-
+    // 将单词加入到生词表中
+    fn handle_capture_word(&mut self) {
+        match self
+            .new_word_dict
+            .add_word(Word::new(dictcn::get_raw_html(&self.capture_word).unwrap()))
+        {
+            Ok(_) => println!("添加成功"),
+            Err(e) => println!("添加失败, Err: {}", e),
+        }
     }
 
     fn handle_delete_dict(&self, ctx: &egui::CtxRef) {
@@ -62,57 +100,93 @@ impl ShengCiApp {
 }
 impl epi::App for ShengCiApp {
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
-        egui::SidePanel::left("")
-            .resizable(false)
-            .default_width(100.)
-            .width_range(80.0..=150.0)
-            .show(ctx, |ui| {
-                ui.vertical(|ui| {
-                    ui.heading("Kill ShengCi");
-                    // ui.add(egui::Separator::default());
-                    ui.add_space(PADDING * 5.);
-                    ui.separator();
-                    ui.collapsing("Manage dict.", |ui| {
-                        if ui.button("Delete dict.").clicked() {
-                            self.handle_delete_dict(ctx);
-                        };
-                        if ui.button("Import dict.").clicked() {
-                            self.handle_import_dict(ctx);
-                        }
+        if self.setting {
+            SidePanel::left("")
+                .resizable(false)
+                .default_width(100.)
+                .width_range(80.0..=150.0)
+                .show(ctx, |ui| {
+                    ui.vertical(|ui| {
+                        ui.collapsing("Manage dict.", |ui| {
+                            if ui.button("Delete dict.").clicked() {
+                                self.handle_delete_dict(ctx);
+                            };
+                            if ui.button("Import dict.").clicked() {
+                                self.handle_import_dict(ctx);
+                            }
+                        });
+                        ui.separator();
+                        ui.collapsing("ShengCi setting.", |ui| {});
                     });
-                    ui.separator();
-                    ui.collapsing("ShengCi setting.", |ui| {});
                 });
-            });
+        }
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered(|ui| {
                 ui.heading("Dict List");
                 ui.separator();
             });
-            ui.collapsing("生词", |ui| {});
-            ui.collapsing("已背诵", |ui| {});
-            ui.collapsing("已复习", |ui| {});
-            ui.collapsing("滚瓜烂熟", |ui| {});
+            let dict_type = ("生词", "熟练", "记住");
+            for d in dict_type {}
+            ui.collapsing("生词", |ui| {
+                for word in &self.new_word_dict.words {
+                    ui.collapsing(word.keyword.as_ref().unwrap(), |ui| {
+                        ui.collapsing("解释", |ui| {
+                            for explain in &word.explains {
+                                ui.label(&explain.0);
+                                ui.label(&explain.1);
+                            }
+                        });
+                        ui.collapsing("音节", |ui| {
+                            ui.label(&word.tips.as_ref().unwrap());
+                        });
+                        ui.collapsing("音标", |ui| {
+                            ui.horizontal(|ui| {
+                                ui.label("英");
+                                ui.label(&word.phonetic.as_ref().unwrap().0);
+                            });
+                            ui.horizontal(|ui| {
+                                ui.label("美");
+                                ui.label(&word.phonetic.as_ref().unwrap().1);
+                            });
+                        });
+                        ui.collapsing("起源", |ui| {
+                            ui.label(&word.etymons.as_ref().unwrap());
+                        });
+                        ui.collapsing("用词分布", |ui| {
+                            self.render_plot(
+                                word.keyword.as_ref().unwrap(),
+                                &word.distribution_data,
+                                ui,
+                            );
+                        });
+                    });
+                }
+            });
+            ui.collapsing("熟练", |ui| {});
+            ui.collapsing("记住", |ui| {});
         });
         egui::TopBottomPanel::bottom("my_bottom_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.add(
+                ui.checkbox(&mut self.setting, "设置");
+                let text = ui.add(
                     egui::TextEdit::singleline(&mut self.capture_word)
                         .hint_text("Input a word to capture.")
-                        .desired_width(500.),
+                        .desired_width(400.)
+                        .text_style(egui::TextStyle::Button),
                 );
                 if ui
                     .add(egui::Button::new("Capture!").text_color(CYAN))
                     .clicked()
                 {
-                    self.handle_capture_word(ctx);
+                    self.handle_capture_word();
+                    self.capture_word = String::new();
                 }
             });
         });
     }
 
     fn name(&self) -> &str {
-        "消灭生词"
+        "Kill ShengCi"
     }
 
     fn setup(

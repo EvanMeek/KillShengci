@@ -2,33 +2,35 @@ use select::{
     document::Document,
     predicate::{Attr, Class, Name},
 };
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Word {
-    keyword: Option<String>,
+    pub keyword: Option<String>,
     // 音节划分
-    tips: Option<String>,
+    pub tips: Option<String>,
     // 词汇等级
-    level: Option<String>,
+    pub level: Option<String>,
     // 词汇音标
-    phonetic: Option<(String, String)>,
+    pub phonetic: Option<(String, String)>,
     // 词汇解释
-    explains: Vec<(String, String)>,
+    pub explains: Vec<(String, String)>,
     // 词汇来源
-    etymons: Option<String>,
+    pub etymons: Option<String>,
     // 词汇分布统计
-    distribution_data: Vec<(u8, Vec<(i64, String)>)>,
+    pub distribution_data: Vec<(u8, Vec<(i64, String)>)>,
 }
+
 impl Word {
     pub fn new(eng: String) -> Word {
         let document = Document::from(eng.as_str());
 
-        let mut keyword: Option<String> = None;
-        let mut tips: Option<String> = None;
-        let mut level: Option<String> = None;
-        let mut phonetic: Option<(String, String)> = None;
+        let mut keyword: Option<String> = Some("".to_string());
+        let mut tips: Option<String> = Some("".to_string());
+        let mut level: Option<String> = Some("".to_string());
+        let mut phonetic: Option<(String, String)> = Some(("".to_string(), "".to_string()));
         let mut explains: Vec<(String, String)> = vec![];
-        let mut etymons: Option<String> = None;
+        let mut etymons: Option<String> = Some("".to_string());
         let mut distribution_data: Vec<(u8, Vec<(i64, String)>)> = vec![];
         // 词续
         for node in document.find(Class("word-cont")) {
