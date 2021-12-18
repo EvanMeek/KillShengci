@@ -1,14 +1,14 @@
 use eframe::{
     egui::{self, Color32, FontDefinitions, FontFamily, ScrollArea, SidePanel},
-    epi,
+    epi::{self, App},
 };
 
 use crate::{
     dict_manage::{Dict, Familiarity},
     dictcn,
-    word::{self, Word},
+    word::Word,
 };
-const PADDING: f32 = 5.;
+const _PADDING: f32 = 5.;
 const CYAN: Color32 = Color32::from_rgb(0, 255, 255);
 pub struct ShengCiApp {
     new_word_dict: Dict,
@@ -16,7 +16,6 @@ pub struct ShengCiApp {
     memorized_dict: Dict,
     capture_word: String,
     setting: bool,
-    word_expains_fold: bool,
 }
 impl ShengCiApp {
     pub fn new() -> ShengCiApp {
@@ -26,14 +25,13 @@ impl ShengCiApp {
             familiarity_dict: Dict::new(Familiarity::Familiarity).unwrap(),
             memorized_dict: Dict::new(Familiarity::MemorizedDict).unwrap(),
             setting: false,
-            word_expains_fold: false,
         }
     }
     fn render_plot(
         &self,
-        id: &String,
-        distribution_data: &Vec<(u8, Vec<(i64, String)>)>,
-        ui: &mut egui::Ui,
+        _id: &String,
+        _distribution_data: &Vec<(u8, Vec<(i64, String)>)>,
+        _ui: &mut egui::Ui,
     ) {
     }
     fn render_dict(&mut self, headling: &String, ui: &mut egui::Ui) {
@@ -86,25 +84,41 @@ impl ShengCiApp {
                         });
                         ui.collapsing("解释", |ui| {
                             for explain in &word.explains {
-                                ui.label(&explain.0);
-                                ui.label(&explain.1);
+                                ui.add(
+                                    egui::Label::new(&explain.0).text_style(egui::TextStyle::Button),
+                                );
+                                ui.add(
+                                    egui::Label::new(&explain.1).text_style(egui::TextStyle::Button),
+                                );
                             }
                         });
                         ui.collapsing("音节", |ui| {
-                            ui.label(&word.tips.as_ref().unwrap());
+                            ui.add(
+                                egui::Label::new(&word.tips.as_ref().unwrap())
+                                    .text_style(egui::TextStyle::Button),
+                            );
                         });
                         ui.collapsing("音标", |ui| {
                             ui.horizontal(|ui| {
-                                ui.label("英");
-                                ui.label(&word.phonetic.as_ref().unwrap().0);
+                                ui.add(egui::Label::new("英").text_style(egui::TextStyle::Button));
+                                ui.add(
+                                    egui::Label::new(&word.phonetic.as_ref().unwrap().0)
+                                        .text_style(egui::TextStyle::Button),
+                                );
                             });
                             ui.horizontal(|ui| {
-                                ui.label("美");
-                                ui.label(&word.phonetic.as_ref().unwrap().1);
+                                ui.add(egui::Label::new("美").text_style(egui::TextStyle::Button));
+                                ui.add(
+                                    egui::Label::new(&word.phonetic.as_ref().unwrap().1)
+                                        .text_style(egui::TextStyle::Button),
+                                );
                             });
                         });
                         ui.collapsing("起源", |ui| {
-                            ui.label(&word.etymons.as_ref().unwrap());
+                            ui.add(
+                                egui::Label::new(&word.etymons.as_ref().unwrap())
+                                    .text_style(egui::TextStyle::Button),
+                            );
                         });
                         ui.collapsing("用词分布", |ui| {
                             self.render_plot(
@@ -120,7 +134,7 @@ impl ShengCiApp {
     }
     fn configura_font(&self, ctx: &egui::CtxRef) {
         // Load font file with bytes reader.
-        let my_font = include_bytes!("../SourceHanMonoSC-Normal.otf");
+        let my_font = include_bytes!("../SourceHanSansCN-Medium.otf");
         // Create FontDefinitions object. That is
         let mut fonts = FontDefinitions::default();
         fonts
@@ -140,16 +154,16 @@ impl ShengCiApp {
         // 设定Headling
         fonts
             .family_and_size
-            .insert(egui::TextStyle::Heading, (FontFamily::Proportional, 25.0));
+            .insert(egui::TextStyle::Heading, (FontFamily::Proportional, 40.0));
         fonts
             .family_and_size
-            .insert(egui::TextStyle::Heading, (FontFamily::Monospace, 25.0));
+            .insert(egui::TextStyle::Heading, (FontFamily::Monospace, 40.0));
         fonts
             .family_and_size
-            .insert(egui::TextStyle::Body, (FontFamily::Proportional, 20.0));
+            .insert(egui::TextStyle::Button, (FontFamily::Proportional, 25.0));
         fonts
             .family_and_size
-            .insert(egui::TextStyle::Body, (FontFamily::Monospace, 20.0));
+            .insert(egui::TextStyle::Button, (FontFamily::Monospace, 25.0));
         ctx.set_fonts(fonts);
     }
     // 将单词加入到生词表中
@@ -165,11 +179,11 @@ impl ShengCiApp {
         }
     }
 
-    fn handle_delete_dict(&self, ctx: &egui::CtxRef) {
+    fn handle_delete_dict(&self, _ctx: &egui::CtxRef) {
         todo!()
     }
 
-    fn handle_import_dict(&self, ctx: &egui::CtxRef) {
+    fn handle_import_dict(&self, _ctx: &egui::CtxRef) {
         todo!()
     }
 
@@ -184,7 +198,7 @@ impl ShengCiApp {
         }
     }
 
-    fn handle_move_word_to_dict(
+    fn _handle_move_word_to_dict(
         &self,
         keyword: &String,
         self_dict: &mut Dict,
@@ -197,12 +211,12 @@ impl ShengCiApp {
     }
 }
 impl epi::App for ShengCiApp {
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
+    fn update(&mut self, ctx: &egui::CtxRef, _frame: &mut epi::Frame<'_>) {
         if self.setting {
             SidePanel::left("")
                 .resizable(false)
-                .default_width(100.)
-                .width_range(80.0..=150.0)
+                .default_width(50.)
+                .width_range(50.0..=70.)
                 .show(ctx, |ui| {
                     ui.vertical(|ui| {
                         ui.collapsing("Manage dict.", |ui| {
@@ -214,7 +228,7 @@ impl epi::App for ShengCiApp {
                             }
                         });
                         ui.separator();
-                        ui.collapsing("ShengCi setting.", |ui| {});
+                        ui.collapsing("ShengCi setting.", |_ui| {});
                     });
                 });
         }
@@ -232,10 +246,10 @@ impl epi::App for ShengCiApp {
         egui::TopBottomPanel::bottom("my_bottom_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.checkbox(&mut self.setting, "设置");
-                let text = ui.add(
+                let _text = ui.add(
                     egui::TextEdit::singleline(&mut self.capture_word)
                         .hint_text("Input a word to capture.")
-                        .desired_width(400.)
+                        .desired_width(100.)
                         .text_style(egui::TextStyle::Button),
                 );
                 if ui

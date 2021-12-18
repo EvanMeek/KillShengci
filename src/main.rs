@@ -4,7 +4,7 @@ use std::{
 };
 
 use eframe::egui::Vec2;
-use egui_demo::{
+use kill_shengci::{
     dict_manage::{self, Dict},
     dictcn,
     shengci_app::ShengCiApp,
@@ -17,7 +17,7 @@ fn main() {
     // return;
     let app = ShengCiApp::new();
     let mut native_options = eframe::NativeOptions::default();
-    native_options.initial_window_size = Some(Vec2::new(700., 500.));
+    native_options.initial_window_size = Some(Vec2::new(300., 500.));
     eframe::run_native(Box::new(app), native_options);
 }
 fn demo() {
