@@ -45,7 +45,7 @@ impl Dict {
         }
     }
     // 刷新自身数据
-    fn flush(&mut self) -> Result<(), io::Error> {
+    pub fn flush(&mut self) -> Result<(), io::Error> {
         self.words = Dict::load_dict(&self.path)?;
         Ok(())
     }
@@ -62,8 +62,9 @@ impl Dict {
     // 将words写入到文件中
     fn write(&mut self) -> Result<bool, io::Error> {
         let mut f = OpenOptions::new()
+            .create(true)
             .write(true)
-            .create_new(false)
+            .truncate(true)
             .open(&self.path)?;
         let mut buffer: String = String::new();
         buffer = serde_json::to_string(&self.words)?;
@@ -76,6 +77,17 @@ impl Dict {
     fn is_contain(&self, keyword: &String) -> Result<bool, io::Error> {
         for word in &self.words {
             if keyword.eq_ignore_ascii_case(word.keyword.as_ref().unwrap()) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+    // 删除单词
+    pub fn delete_word(&mut self, keyword: &String) -> Result<bool, io::Error> {
+        for (i, word) in self.words.clone().iter().enumerate() {
+            if keyword.eq_ignore_ascii_case(word.keyword.as_ref().unwrap()) {
+                self.words.remove(i);
+                self.write()?;
                 return Ok(true);
             }
         }

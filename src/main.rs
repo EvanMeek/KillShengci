@@ -4,11 +4,11 @@ use std::{
 };
 
 use eframe::egui::Vec2;
-use egui_demo::shengci_app::ShengCiApp;
+use egui_demo::{dictcn, shengci_app::ShengCiApp, word::Word};
 use serde::{Deserialize, Serialize};
 
 fn main() {
-    // demo();
+    // demo2();
     // return;
     let app = ShengCiApp::new();
     let mut native_options = eframe::NativeOptions::default();
@@ -41,4 +41,44 @@ fn demo() {
     let mut buffer: String = String::new();
     buffer = serde_json::to_string_pretty(&stus).unwrap();
     f.write(buffer.as_bytes()).unwrap();
+}
+#[derive(Debug, Deserialize, Serialize)]
+struct Student<'a> {
+    name: &'a str,
+    age: i32,
+    sex: bool,
+}
+fn demo2() {
+    let mut stus: Vec<Student> = vec![];
+    stus.push(Student {
+        name: "张三",
+        age: 10,
+        sex: true,
+    });
+    stus.push(Student {
+        name: "李四",
+        age: 11,
+        sex: false,
+    });
+    stus.push(Student {
+        name: "王五",
+        age: 12,
+        sex: true,
+    });
+    io(&stus);
+    stus.remove(1);
+    io(&stus);
+}
+fn io(stus: &Vec<Student>) {
+    if let Ok(mut f) = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open("/home/evanmeek/.config/shengci/test.json")
+    {
+        let mut buffer = serde_json::to_string_pretty(&stus).unwrap();
+        f.write(&mut buffer.as_bytes());
+        let mut buffer = String::new();
+        f.read_to_string(&mut buffer);
+        println!("test.json\n{}", buffer);
+    }
 }

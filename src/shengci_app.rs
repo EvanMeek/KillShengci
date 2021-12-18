@@ -77,7 +77,9 @@ impl ShengCiApp {
             .new_word_dict
             .add_word(Word::new(dictcn::get_raw_html(&self.capture_word).unwrap()))
         {
-            Ok(_) => println!("添加成功"),
+            Ok(_) => {
+                println!("添加成功");
+            }
             Err(e) => println!("添加失败, Err: {}", e),
         }
     }
@@ -87,6 +89,21 @@ impl ShengCiApp {
     }
 
     fn handle_import_dict(&self, ctx: &egui::CtxRef) {
+        todo!()
+    }
+
+    fn handle_delete_word(&mut self, dict_familiarity: Familiarity, keyword: &String) {
+        match match dict_familiarity {
+            Familiarity::NewWord => self.new_word_dict.delete_word(keyword),
+            Familiarity::Familiarity => self.familiarity_dict.delete_word(keyword),
+            Familiarity::MemorizedDict => self.memorized_dict.delete_word(keyword),
+        } {
+            Ok(_) => println!("删除成功"),
+            Err(e) => println!("删除失败, Err: {}", e),
+        }
+    }
+
+    fn handle_change_word_familiarity(&self) {
         todo!()
     }
 }
