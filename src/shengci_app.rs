@@ -36,7 +36,88 @@ impl ShengCiApp {
         ui: &mut egui::Ui,
     ) {
     }
-    fn render_dict_list(&self, id: &String, ui: &mut egui::Ui) {}
+    fn render_dict(&mut self, headling: &String, ui: &mut egui::Ui) {
+        ui.collapsing(headling, |ui| {
+            for word in &match headling.as_str() {
+                "生词" => self.new_word_dict.words.clone(),
+                "熟悉" => self.familiarity_dict.words.clone(),
+                "记住" => self.memorized_dict.words.clone(),
+                _ => panic!("fuck"),
+            } {
+                ui.horizontal(|ui| {
+                    egui::CollapsingHeader::new(word.keyword.as_ref().unwrap()).show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            if ui.button("删除").on_hover_text("永久删除此单词").clicked()
+                            {
+                                self.handle_delete_word(
+                                    Familiarity::NewWord,
+                                    &word.keyword.as_ref().unwrap(),
+                                );
+                            }
+                            if ui
+                                .button(match headling.as_str() {
+                                    "生词" => "熟悉",
+                                    "熟悉" => "记住",
+                                    "记住" => "熟悉",
+                                    _ => "",
+                                })
+                                .on_hover_text("移动到熟练词库")
+                                .clicked()
+                            {
+                                match match headling.as_str() {
+                                    "生词" => self.new_word_dict.move_word_to_dict(
+                                        &word.keyword.as_ref().unwrap(),
+                                        &mut self.familiarity_dict,
+                                    ),
+                                    "熟悉" => self.familiarity_dict.move_word_to_dict(
+                                        &word.keyword.as_ref().unwrap(),
+                                        &mut self.memorized_dict,
+                                    ),
+                                    "记住" => self.memorized_dict.move_word_to_dict(
+                                        &word.keyword.as_ref().unwrap(),
+                                        &mut self.familiarity_dict,
+                                    ),
+                                    _ => Ok(false),
+                                } {
+                                    Ok(_) => println!("移动成功"),
+                                    Err(e) => println!("移动失败, Err: {}", e),
+                                };
+                            }
+                        });
+                        ui.collapsing("解释", |ui| {
+                            for explain in &word.explains {
+                                ui.label(&explain.0);
+                                ui.label(&explain.1);
+                            }
+                        });
+                        ui.collapsing("音节", |ui| {
+                            ui.label(&word.tips.as_ref().unwrap());
+                        });
+                        ui.collapsing("音标", |ui| {
+                            ui.horizontal(|ui| {
+                                ui.label("英");
+                                ui.label(&word.phonetic.as_ref().unwrap().0);
+                            });
+                            ui.horizontal(|ui| {
+                                ui.label("美");
+                                ui.label(&word.phonetic.as_ref().unwrap().1);
+                            });
+                        });
+                        ui.collapsing("起源", |ui| {
+                            ui.label(&word.etymons.as_ref().unwrap());
+                        });
+                        ui.collapsing("用词分布", |ui| {
+                            self.render_plot(
+                                word.keyword.as_ref().unwrap(),
+                                &word.distribution_data,
+                                ui,
+                            );
+                        });
+                    });
+                });
+            }
+        });
+    }
     fn configura_font(&self, ctx: &egui::CtxRef) {
         // Load font file with bytes reader.
         let my_font = include_bytes!("../SourceHanMonoSC-Normal.otf");
@@ -103,8 +184,16 @@ impl ShengCiApp {
         }
     }
 
-    fn handle_change_word_familiarity(&self) {
-        todo!()
+    fn handle_move_word_to_dict(
+        &self,
+        keyword: &String,
+        self_dict: &mut Dict,
+        other_dict: &mut Dict,
+    ) {
+        match self_dict.move_word_to_dict(keyword, other_dict) {
+            Ok(_) => println!("移动成功"),
+            Err(e) => println!("移动失败, Err: {}", e),
+        }
     }
 }
 impl epi::App for ShengCiApp {
@@ -130,73 +219,14 @@ impl epi::App for ShengCiApp {
                 });
         }
         egui::CentralPanel::default().show(ctx, |ui| {
-            ScrollArea::auto_sized().show(ui, |ui| {
+            ScrollArea::vertical().show(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.heading("Dict List");
                     ui.separator();
                 });
-                let dict_type = ("生词", "熟练", "记住");
-                ui.collapsing("生词", |ui| {
-                    for word in &self.new_word_dict.words.clone() {
-                        ui.horizontal(|ui| {
-                            egui::CollapsingHeader::new(word.keyword.as_ref().unwrap()).show(
-                                ui,
-                                |ui| {
-                                    ui.horizontal(|ui| {
-                                        if ui
-                                            .button("删除")
-                                            .on_hover_text("永久删除此单词")
-                                            .clicked()
-                                        {
-                                            self.handle_delete_word(
-                                                Familiarity::NewWord,
-                                                &word.keyword.as_ref().unwrap(),
-                                            );
-                                        }
-                                        if ui
-                                            .button("熟练")
-                                            .on_hover_text("移动到熟练词库")
-                                            .clicked()
-                                        {
-                                            self.handle_change_word_familiarity();
-                                        }
-                                    });
-                                    ui.collapsing("解释", |ui| {
-                                        for explain in &word.explains {
-                                            ui.label(&explain.0);
-                                            ui.label(&explain.1);
-                                        }
-                                    });
-                                    ui.collapsing("音节", |ui| {
-                                        ui.label(&word.tips.as_ref().unwrap());
-                                    });
-                                    ui.collapsing("音标", |ui| {
-                                        ui.horizontal(|ui| {
-                                            ui.label("英");
-                                            ui.label(&word.phonetic.as_ref().unwrap().0);
-                                        });
-                                        ui.horizontal(|ui| {
-                                            ui.label("美");
-                                            ui.label(&word.phonetic.as_ref().unwrap().1);
-                                        });
-                                    });
-                                    ui.collapsing("起源", |ui| {
-                                        ui.label(&word.etymons.as_ref().unwrap());
-                                    });
-                                    ui.collapsing("用词分布", |ui| {
-                                        self.render_plot(
-                                            word.keyword.as_ref().unwrap(),
-                                            &word.distribution_data,
-                                            ui,
-                                        );
-                                    });
-                                },
-                            );
-                        });
-                    }
-                });
-                ui.collapsing("熟练", |ui| {});
-                ui.collapsing("记住", |ui| {});
+                self.render_dict(&"生词".to_string(), ui);
+                self.render_dict(&"熟悉".to_string(), ui);
+                self.render_dict(&"记住".to_string(), ui);
             });
         });
         egui::TopBottomPanel::bottom("my_bottom_panel").show(ctx, |ui| {

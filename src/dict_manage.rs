@@ -93,6 +93,29 @@ impl Dict {
         }
         Ok(false)
     }
+    // 查找单词
+    pub fn find_word_by_keyword(&self, keyword: &String) -> Option<Word> {
+        for word in &self.words {
+            if keyword.eq_ignore_ascii_case(word.keyword.as_ref().unwrap()) {
+                return Some(word.clone());
+            }
+        }
+        None
+    }
+    // 移动单词到其他词库中
+    pub fn move_word_to_dict(
+        &mut self,
+        keyword: &String,
+        dict: &mut Dict,
+    ) -> Result<bool, io::Error> {
+        if let Some(word) = self.find_word_by_keyword(keyword) {
+            dict.add_word(word)?;
+            self.delete_word(keyword)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
 }
 #[derive(Debug, Deserialize, Clone, Serialize)]
 pub enum Familiarity {
