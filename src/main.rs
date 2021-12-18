@@ -4,11 +4,16 @@ use std::{
 };
 
 use eframe::egui::Vec2;
-use egui_demo::{dictcn, shengci_app::ShengCiApp, word::Word};
+use egui_demo::{
+    dict_manage::{self, Dict},
+    dictcn,
+    shengci_app::ShengCiApp,
+    word::Word,
+};
 use serde::{Deserialize, Serialize};
 
 fn main() {
-    // demo2();
+    // demo3();
     // return;
     let app = ShengCiApp::new();
     let mut native_options = eframe::NativeOptions::default();
@@ -81,4 +86,10 @@ fn io(stus: &Vec<Student>) {
         f.read_to_string(&mut buffer);
         println!("test.json\n{}", buffer);
     }
+}
+
+fn demo3() {
+    let w = Word::new(dictcn::get_raw_html("hello").unwrap());
+    let mut dict = Dict::new(dict_manage::Familiarity::NewWord).unwrap();
+    dict.add_word(w).unwrap();
 }

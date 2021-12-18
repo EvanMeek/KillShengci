@@ -61,7 +61,7 @@ impl ShengCiApp {
                                     "记住" => "熟悉",
                                     _ => "",
                                 })
-                                .on_hover_text("移动到熟练词库")
+                                .on_hover_text("移动到指定词库")
                                 .clicked()
                             {
                                 match match headling.as_str() {
@@ -221,7 +221,7 @@ impl epi::App for ShengCiApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ScrollArea::vertical().show(ui, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.heading("Dict List");
+                    ui.heading("杀死生词");
                     ui.separator();
                 });
                 self.render_dict(&"生词".to_string(), ui);
