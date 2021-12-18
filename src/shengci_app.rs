@@ -126,7 +126,7 @@ impl epi::App for ShengCiApp {
                 ui.separator();
             });
             let dict_type = ("生词", "熟练", "记住");
-            for d in dict_type {}
+            
             ui.collapsing("生词", |ui| {
                 for word in &self.new_word_dict.words {
                     ui.collapsing(word.keyword.as_ref().unwrap(), |ui| {

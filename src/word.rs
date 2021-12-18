@@ -41,10 +41,11 @@ impl Word {
             if let Some(keyword_tips) = keyword_node.attr("tip") {
                 tips = Some(keyword_tips.to_string());
             }
-            let level_title_node = node.find(Class("level-title")).next().unwrap();
             // 单词等级
-            if let Some(level_title_text) = level_title_node.attr("level") {
-                level = Some(level_title_text.to_string());
+            if let Some(level_title_node) = node.find(Class("level-title")).next() {
+                if let Some(level_title_text) = level_title_node.attr("level") {
+                    level = Some(level_title_text.to_string());
+                }
             }
         }
         // 词汇音标
