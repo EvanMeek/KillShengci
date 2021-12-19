@@ -4,6 +4,8 @@ use select::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+use crate::dict_manage::Familiarity;
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Word {
     pub keyword: Option<String>,
@@ -18,7 +20,9 @@ pub struct Word {
     // 词汇来源
     pub etymons: Option<String>,
     // 词汇分布统计
-    pub distribution_data: Vec<(u8, Vec<(i64, String)>)>,
+    pub distribution_data: Vec<(i64, String)>,
+    // 熟练程度
+    pub familiarity: Familiarity,
 }
 
 impl Word {
@@ -31,7 +35,7 @@ impl Word {
         let mut phonetic: Option<(String, String)> = Some(("".to_string(), "".to_string()));
         let mut explains: Vec<(String, String)> = vec![];
         let mut etymons: Option<String> = Some("".to_string());
-        let mut distribution_data: Vec<(u8, Vec<(i64, String)>)> = vec![];
+        let mut distribution_data: Vec<(i64, String)> = vec![];
         // 词续
         for node in document.find(Class("word-cont")) {
             let keyword_node = node.find(Class("keyword")).next().unwrap();
@@ -83,10 +87,9 @@ impl Word {
                     &urlencoding::decode(w_distribution_data).unwrap(),
                 )
                 .unwrap();
-                for (i, d) in json_data.as_object().unwrap().values().enumerate() {
-                    let mut data = vec![];
-                    data.push((d["percent"].as_i64().unwrap(), d["sense"].to_string()));
-                    distribution_data.push((i as u8, data));
+                for d in json_data.as_object().unwrap().values() {
+                    distribution_data
+                        .push((d["percent"].as_i64().unwrap(), d["sense"].to_string()));
                 }
             }
         };
@@ -98,6 +101,7 @@ impl Word {
             explains,
             etymons,
             distribution_data,
+            familiarity: Familiarity::default(),
         }
     }
 }

@@ -1,10 +1,15 @@
+use core::panic;
 use std::{
+    default,
     env::{self},
     ffi::{OsStr, OsString},
     fs::{File, OpenOptions},
     io::{self, Read, Write},
+    str::FromStr,
+    string::ParseError,
 };
 
+use rusqlite::types::FromSql;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -12,7 +17,7 @@ use crate::word::Word;
 
 #[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct Dict {
-    familiarity: Familiarity,
+    pub familiarity: Familiarity,
     path: OsString,
     pub words: Vec<Word>,
 }
@@ -22,7 +27,7 @@ impl Dict {
         let path = match familiarity {
             Familiarity::NewWord => env::var("SHENGCI_NEW_WORD_DICT"),
             Familiarity::Familiarity => env::var("SHENGCI_FAMILIARITY_DICT"),
-            Familiarity::MemorizedDict => env::var("SHENGCI_MEMORIZED_DICT"),
+            Familiarity::Memorized => env::var("SHENGCI_MEMORIZED_DICT"),
         };
         Ok(Dict {
             familiarity,
@@ -121,5 +126,45 @@ impl Dict {
 pub enum Familiarity {
     NewWord,
     Familiarity,
-    MemorizedDict,
+    Memorized,
+}
+
+impl Default for Familiarity {
+    fn default() -> Self {
+        Self::NewWord
+    }
+}
+impl ToString for Familiarity {
+    fn to_string(&self) -> String {
+        match self {
+            Self::NewWord => String::from("new_word"),
+            Self::Familiarity => String::from("familiarity"),
+            Self::Memorized => String::from("memorized"),
+        }
+    }
+}
+impl FromStr for Familiarity {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "new_word" => Ok(Self::NewWord),
+            "familiarity" => Ok(Self::Familiarity),
+            "memorized" => Ok(Self::Memorized),
+            _ => panic!("fuck"),
+        }
+    }
+}
+
+impl FromSql for Familiarity {
+    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+        match value {
+            rusqlite::types::ValueRef::Text(v) => match std::str::from_utf8(v).unwrap() {
+                "new_word" => Ok(Self::NewWord),
+                "familiarity" => Ok(Self::Familiarity),
+                "memorized" => Ok(Self::Memorized),
+                _ => panic!("fuck"),
+            },
+            _ => panic!("fuck"),
+        }
+    }
 }

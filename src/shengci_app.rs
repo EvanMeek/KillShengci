@@ -23,7 +23,7 @@ impl ShengCiApp {
             new_word_dict: Dict::new(Familiarity::NewWord).unwrap(),
             capture_word: Default::default(),
             familiarity_dict: Dict::new(Familiarity::Familiarity).unwrap(),
-            memorized_dict: Dict::new(Familiarity::MemorizedDict).unwrap(),
+            memorized_dict: Dict::new(Familiarity::Memorized).unwrap(),
             setting: false,
         }
     }
@@ -121,11 +121,11 @@ impl ShengCiApp {
                             );
                         });
                         ui.collapsing("用词分布", |ui| {
-                            self.render_plot(
-                                word.keyword.as_ref().unwrap(),
-                                &word.distribution_data,
-                                ui,
-                            );
+                            // self.render_plot(
+                            //     word.keyword.as_ref().unwrap(),
+                            //     &word.distribution_data,
+                            //     ui,
+                            // );
                         });
                     });
                 });
@@ -191,7 +191,7 @@ impl ShengCiApp {
         match match dict_familiarity {
             Familiarity::NewWord => self.new_word_dict.delete_word(keyword),
             Familiarity::Familiarity => self.familiarity_dict.delete_word(keyword),
-            Familiarity::MemorizedDict => self.memorized_dict.delete_word(keyword),
+            Familiarity::Memorized => self.memorized_dict.delete_word(keyword),
         } {
             Ok(_) => println!("删除成功"),
             Err(e) => println!("删除失败, Err: {}", e),
