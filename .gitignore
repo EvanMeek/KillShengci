@@ -1,1 +1,4 @@
 /target
+src/test.rs
+*.db
+*.sql
