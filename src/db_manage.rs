@@ -32,7 +32,7 @@ impl DBManage {
             .collect::<Result<Vec<Word>, _>>()?;
         Ok(words)
     }
-    pub fn init_table(&self) {
+    pub fn init_db(&self) {
         if let Ok(_result) = self.connection.execute(
             r#"SELECT * FROM sqlite_master where type='table' and name='word'"#,
             [],

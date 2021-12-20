@@ -16,7 +16,7 @@ const _PADDING: f32 = 5.;
 const CYAN: Color32 = Color32::from_rgb(0, 255, 255);
 #[derive(Default)]
 pub struct App {
-    db: DBManage,
+    pub db: DBManage,
     setting: bool,
     capture_word: String,
     msg: String,

@@ -3,7 +3,7 @@ use crate::{db_manage::DBManage, dict_manage::Dict, dictcn, word::Word};
 #[test]
 fn test_connect_db() {
     let db = DBManage::new();
-    db.init_table();
+    db.init_db();
     let word = Word::new(dictcn::get_raw_html("fuck").unwrap());
     db.add_word(&word).unwrap();
 }
