@@ -4,17 +4,33 @@ use rusqlite::{params, types::FromSql, Connection, Rows};
 use serde::__private::de::IdentifierDeserializer;
 
 use crate::{
-    dict_manage::{Dict, Familiarity},
-    word::Word,
+    word::{Word, Familiarity},
 };
 pub struct DBManage {
     connection: Connection,
+}
+
+impl Default for DBManage {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 impl DBManage {
     pub fn new() -> Self {
         Self {
             connection: Connection::open("dict.db").expect("创建数据库出错"),
         }
+    }
+    pub fn get_words(&self, familiarity: &Familiarity) -> Result<Vec<Word>, rusqlite::Error> {
+        let mut stmt = self
+            .connection
+            .prepare(r#"SELECT keyword FROM word WHERE familiarity=:familiarity;"#)?;
+        let words = stmt
+            .query_map::<Word, _, _>(&[(":familiarity", &familiarity.to_string())], |row| {
+                self.find_word_by_keyword(&row.get::<_, String>(0).unwrap())
+            })?
+            .collect::<Result<Vec<Word>, _>>()?;
+        Ok(words)
     }
     pub fn init_table(&self) {
         if let Ok(_result) = self.connection.execute(
@@ -177,7 +193,28 @@ impl DBManage {
         )?;
         Ok(())
     }
-    pub fn init_dict(&self, dict: &mut Dict) -> Result<bool, rusqlite::Error> {
-        Ok(true)
+    pub fn change_word_familiarity(
+        &self,
+        keyword: &str,
+        familiarity: &Familiarity,
+    ) -> Result<(), rusqlite::Error> {
+        self.connection.execute(
+            r#"
+            UPDATE word
+            SET familiarity = ?1
+            WHERE keyword = ?2
+            "#,
+            [familiarity.to_string(), keyword.to_string()],
+        )?;
+        Ok(())
+    }
+    pub fn delete_word_by_familiarity(
+        &self,
+        familiarity: &Familiarity,
+    ) -> Result<(), rusqlite::Error> {
+        for word in self.get_words(familiarity)? {
+            self.delete_word_by_keyword(&word.keyword.unwrap())?;
+        }
+        Ok(())
     }
 }

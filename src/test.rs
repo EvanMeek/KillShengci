@@ -9,7 +9,7 @@ fn test_connect_db() {
 }
 #[test]
 fn create_word() {
-    let word = Word::new(dictcn::get_raw_html("hello").unwrap());
+    let word = Word::new(dictcn::get_raw_html("book").unwrap());
     println!(
         "Serializated word: {}",
         serde_json::to_string_pretty(&word).unwrap()
@@ -17,7 +17,7 @@ fn create_word() {
 }
 #[test]
 fn add_word() {
-    let word = Word::new(dictcn::get_raw_html("hello").unwrap());
+    let word = Word::new(dictcn::get_raw_html("game").unwrap());
     let db = DBManage::new();
     db.add_word(&word).unwrap();
 }
@@ -33,4 +33,29 @@ fn find_word() {
 fn delete_word() {
     let db = DBManage::new();
     db.delete_word_by_keyword(&"fuck".to_string()).unwrap()
+}
+#[test]
+fn update_word() {
+    let db = DBManage::new();
+    db.change_word_familiarity(
+        &"hello".to_string(),
+        &crate::dict_manage::Familiarity::Familiarity,
+    )
+    .unwrap();
+}
+#[test]
+fn get_keywords() {
+    let db = DBManage::new();
+    db.get_words(&crate::dict_manage::Familiarity::NewWord)
+        .unwrap();
+}
+
+#[test]
+fn get_words() {
+    let db = DBManage::new();
+    println!(
+        "{:#?}",
+        db.get_words(&crate::dict_manage::Familiarity::NewWord)
+            .unwrap()
+    );
 }

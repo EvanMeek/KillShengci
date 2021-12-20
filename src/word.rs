@@ -1,3 +1,6 @@
+use std::{string::ParseError, str::FromStr};
+
+use rusqlite::types::FromSql;
 use select::{
     document::Document,
     predicate::{Attr, Class, Name},
@@ -5,7 +8,6 @@ use select::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::dict_manage::Familiarity;
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Word {
     pub keyword: Option<String>,
@@ -102,6 +104,53 @@ impl Word {
             etymons,
             distribution_data,
             familiarity: Familiarity::default(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, Serialize)]
+pub enum Familiarity {
+    NewWord,
+    Familiarity,
+    Memorized,
+}
+
+impl Default for Familiarity {
+    fn default() -> Self {
+        Self::NewWord
+    }
+}
+impl ToString for Familiarity {
+    fn to_string(&self) -> String {
+        match self {
+            Self::NewWord => String::from("生词"),
+            Self::Familiarity => String::from("熟练"),
+            Self::Memorized => String::from("记住"),
+        }
+    }
+}
+impl FromStr for Familiarity {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "生词" => Ok(Self::NewWord),
+            "熟练" => Ok(Self::Familiarity),
+            "记住" => Ok(Self::Memorized),
+            _ => panic!("fuck"),
+        }
+    }
+}
+
+impl FromSql for Familiarity {
+    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+        match value {
+            rusqlite::types::ValueRef::Text(v) => match std::str::from_utf8(v).unwrap() {
+                "生词" => Ok(Self::NewWord),
+                "熟练" => Ok(Self::Familiarity),
+                "记住" => Ok(Self::Memorized),
+                _ => panic!("fuck"),
+            },
+            _ => panic!("fuck"),
         }
     }
 }
