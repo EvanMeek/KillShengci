@@ -1,4 +1,4 @@
-use std::{string::ParseError, str::FromStr};
+use std::{str::FromStr, string::ParseError};
 
 use rusqlite::types::FromSql;
 use select::{
@@ -108,7 +108,7 @@ impl Word {
     }
 }
 
-#[derive(Debug, Deserialize, Clone, Serialize)]
+#[derive(Debug, Deserialize, Clone, Serialize, PartialEq)]
 pub enum Familiarity {
     NewWord,
     Familiarity,

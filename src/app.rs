@@ -1,7 +1,7 @@
 use eframe::{
     egui::{
-        self, Button, CentralPanel, Color32, CtxRef, FontDefinitions, FontFamily, ScrollArea,
-        SidePanel, TextEdit, TextStyle, TopBottomPanel,
+        self, Button, CentralPanel, Color32, CtxRef, FontData, FontDefinitions, FontFamily,
+        RichText, ScrollArea, SidePanel, TextEdit, TextStyle, TopBottomPanel,
     },
     epi::{self, Frame, Storage},
 };
@@ -9,7 +9,7 @@ use eframe::{
 use crate::{
     db_manage::DBManage,
     dictcn,
-    word::{Word, Familiarity},
+    word::{Familiarity, Word},
 };
 
 const _PADDING: f32 = 5.;
@@ -20,6 +20,9 @@ pub struct App {
     setting: bool,
     capture_word: String,
     msg: String,
+    radio_familiarity: Familiarity,
+    show_word_info: bool,
+    current_word: Word,
 }
 impl App {
     fn new() -> Self {
@@ -52,11 +55,17 @@ impl App {
         other_familiarity: &Familiarity,
         ui: &mut egui::Ui,
     ) {
-        ui.collapsing(heading, |ui| {
-            for word in self.db.get_words(familiarity).unwrap() {
-                ui.horizontal(|ui| {
-                    egui::CollapsingHeader::new(word.keyword.as_ref().unwrap()).show(ui, |ui| {
-                        ui.horizontal(|ui| {
+        ui.vertical(|ui| {
+            ScrollArea::vertical()
+                .auto_shrink([true; 2])
+                .show(ui, |ui| {
+                    for word in self.db.get_words(familiarity).unwrap() {
+                        let word_resp = ui.add(Button::new(word.keyword.as_ref().unwrap()).small());
+                        if word_resp.clicked() {
+                            self.show_word_info = true;
+                            self.current_word = word.clone();
+                        }
+                        word_resp.context_menu(|ui| {
                             if ui.button("删除").on_hover_text("永久删除此单词").clicked()
                             {
                                 self.handle_delete_word(&word.keyword.as_ref().unwrap());
@@ -72,51 +81,57 @@ impl App {
                                 );
                             }
                         });
-                        ui.collapsing("解释", |ui| {
-                            for explain in &word.explains {
-                                ui.add(
-                                    egui::Label::new(&explain.0)
-                                        .text_style(egui::TextStyle::Button),
-                                );
-                                ui.add(
-                                    egui::Label::new(&explain.1)
-                                        .text_style(egui::TextStyle::Button),
-                                );
-                            }
-                        });
-                        ui.collapsing("音节", |ui| {
-                            ui.add(
-                                egui::Label::new(&word.tips.as_ref().unwrap())
-                                    .text_style(egui::TextStyle::Button),
-                            );
-                        });
-                        ui.collapsing("音标", |ui| {
-                            ui.horizontal(|ui| {
-                                ui.add(egui::Label::new("英").text_style(egui::TextStyle::Button));
-                                ui.add(
-                                    egui::Label::new(&word.phonetic.as_ref().unwrap().0)
-                                        .text_style(egui::TextStyle::Button),
-                                );
-                            });
-                            ui.horizontal(|ui| {
-                                ui.add(egui::Label::new("美").text_style(egui::TextStyle::Button));
-                                ui.add(
-                                    egui::Label::new(&word.phonetic.as_ref().unwrap().1)
-                                        .text_style(egui::TextStyle::Button),
-                                );
-                            });
-                        });
-                        ui.collapsing("起源", |ui| {
-                            ui.add(
-                                egui::Label::new(&word.etymons.as_ref().unwrap())
-                                    .text_style(egui::TextStyle::Button),
-                            );
-                        });
-                        ui.collapsing("用词分布", |ui| {});
+                    }
+                });
+        });
+        // println!("{:#?}", self.current_word);
+        if self.show_word_info {
+            ui.vertical(|ui| {
+                ui.collapsing("解释", |ui| {
+                    for explain in &self.current_word.explains {
+                        ui.add(egui::Label::new(
+                            RichText::new(&explain.0).text_style(egui::TextStyle::Button),
+                        ));
+                        ui.add(egui::Label::new(
+                            RichText::new(&explain.1).text_style(egui::TextStyle::Button),
+                        ));
+                    }
+                });
+                ui.collapsing("音节", |ui| {
+                    ui.add(egui::Label::new(
+                        RichText::new(self.current_word.tips.as_ref().unwrap())
+                            .text_style(TextStyle::Button),
+                    ));
+                });
+                ui.collapsing("音标", |ui| {
+                    ui.horizontal(|ui| {
+                        ui.add(egui::Label::new(
+                            RichText::new("英").text_style(egui::TextStyle::Button),
+                        ));
+                        ui.add(egui::Label::new(
+                            RichText::new(&self.current_word.phonetic.as_ref().unwrap().0)
+                                .text_style(egui::TextStyle::Button),
+                        ));
+                    });
+                    ui.horizontal(|ui| {
+                        ui.add(egui::Label::new(
+                            RichText::new("美").text_style(egui::TextStyle::Button),
+                        ));
+                        ui.add(egui::Label::new(
+                            RichText::new(&self.current_word.phonetic.as_ref().unwrap().1)
+                                .text_style(egui::TextStyle::Button),
+                        ));
                     });
                 });
-            }
-        });
+                ui.collapsing("起源", |ui| {
+                    ui.add(egui::Label::new(
+                        RichText::new(self.current_word.etymons.as_ref().unwrap())
+                            .text_style(egui::TextStyle::Button),
+                    ));
+                });
+                ui.collapsing("用词分布", |ui| {});
+            });
+        }
     }
     fn configuration_fonts(&self, ctx: &CtxRef) {
         let my_font = include_bytes!("../SourceHanSansCN-Medium.otf");
@@ -125,7 +140,7 @@ impl App {
         // Create FontDefinitions object.
         fonts
             .font_data
-            .insert("my_font".to_owned(), std::borrow::Cow::Borrowed(my_font));
+            .insert("my_font".to_owned(), FontData::from_static(my_font));
         // 设定iosevka字体为最优选字体
         fonts
             .fonts_for_family
@@ -136,13 +151,13 @@ impl App {
         // 设定不同样式的字体大小
         fonts
             .family_and_size
-            .insert(egui::TextStyle::Button, (FontFamily::Monospace, 25.0));
+            .insert(egui::TextStyle::Button, (FontFamily::Monospace, 17.0));
         fonts
             .family_and_size
             .insert(egui::TextStyle::Heading, (FontFamily::Monospace, 30.0));
         fonts
             .family_and_size
-            .insert(egui::TextStyle::Body, (FontFamily::Monospace, 25.0));
+            .insert(egui::TextStyle::Body, (FontFamily::Monospace, 15.0));
         ctx.set_fonts(fonts);
     }
 
@@ -201,44 +216,69 @@ impl epi::App for App {
         }
 
         CentralPanel::default().show(ctx, |ui| {
-            ScrollArea::vertical().show(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.heading(&self.msg);
-                    ui.separator();
-                });
-                self.render_dict(
-                    &"生词".to_string(),
-                    &Familiarity::NewWord,
-                    &Familiarity::Familiarity,
-                    ui,
-                );
-                self.render_dict(
-                    &"熟悉".to_string(),
-                    &Familiarity::Familiarity,
-                    &Familiarity::Memorized,
-                    ui,
-                );
-                self.render_dict(
-                    &"记住".to_string(),
-                    &Familiarity::Memorized,
-                    &Familiarity::Familiarity,
-                    ui,
-                );
+            ui.vertical_centered(|ui| {
+                ui.heading(&self.msg);
+                ui.separator();
+            });
+            ui.with_layout(egui::Layout::left_to_right(), |ui| {
+                match self.radio_familiarity {
+                    Familiarity::NewWord => self.render_dict(
+                        &"生词".to_string(),
+                        &Familiarity::NewWord,
+                        &Familiarity::Familiarity,
+                        ui,
+                    ),
+                    Familiarity::Familiarity => self.render_dict(
+                        &"熟悉".to_string(),
+                        &Familiarity::Familiarity,
+                        &Familiarity::Memorized,
+                        ui,
+                    ),
+                    Familiarity::Memorized => self.render_dict(
+                        &"记住".to_string(),
+                        &Familiarity::Memorized,
+                        &Familiarity::Familiarity,
+                        ui,
+                    ),
+                }
             });
         });
         TopBottomPanel::bottom("my_bottom_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.checkbox(&mut self.setting, "设置");
+                ui.separator();
                 let _text = ui.add(
                     TextEdit::singleline(&mut self.capture_word)
-                        .hint_text("Input a word to capture.")
-                        .desired_width(100.)
+                        .hint_text("请输入一个单词以捕获")
+                        .desired_width(250.)
                         .text_style(TextStyle::Button),
                 );
-                if ui.add(Button::new("Capture!").text_color(CYAN)).clicked() {
+                if ui
+                    .add(Button::new(RichText::new("添加到生词表！").color(CYAN)))
+                    .clicked()
+                {
                     self.handle_capture_word();
                     self.capture_word = String::new();
                 }
+                ui.separator();
+
+                ui.horizontal(|ui| {
+                    ui.radio_value(
+                        &mut self.radio_familiarity,
+                        Familiarity::NewWord,
+                        "显示生词",
+                    );
+                    ui.radio_value(
+                        &mut self.radio_familiarity,
+                        Familiarity::Familiarity,
+                        "显示熟词",
+                    );
+                    ui.radio_value(
+                        &mut self.radio_familiarity,
+                        Familiarity::Memorized,
+                        "显示记住",
+                    );
+                });
             });
         });
     }
