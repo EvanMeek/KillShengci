@@ -1,5 +1,6 @@
 use std::{str::FromStr, string::ParseError};
 
+use regex::Regex;
 use rusqlite::types::FromSql;
 use select::{
     document::Document,
@@ -27,6 +28,9 @@ pub struct Word {
     pub familiarity: Familiarity,
     // 形式
     pub shape: Vec<(String, String)>,
+    // 词组
+    // (english link)
+    pub phrase: Vec<(String, String)>,
 }
 
 impl Word {
@@ -42,6 +46,19 @@ impl Word {
         let mut distribution_data: Vec<(i64, String)> = vec![];
         let mut shape: Vec<(String, String)> = vec![];
         let mut phrase: Vec<(String, String)> = vec![];
+        // 单词词组
+        if let Some(phrase_node) = document.find(Attr("class", "layout anno")).next() {
+            println!("node: {:#?}", phrase_node);
+            for phrase_node in phrase_node.find(Name("li")).into_iter() {
+                let phrase_node = phrase_node.find(Name("a")).next();
+
+                let phrase_en = phrase_node.unwrap().clone().text();
+                let phrase_en = phrase_en.trim().to_string();
+                let phrase_link = phrase_node.unwrap().attr("href").unwrap().to_string();
+                phrase.push((phrase_en, phrase_link));
+            }
+        }
+        // 单词形式
         if let Some(shapes) = document.find(Class("shape")).next() {
             let shape_types: Vec<String> = shapes
                 .find(Name("label"))
@@ -125,6 +142,7 @@ impl Word {
             distribution_data,
             familiarity: Familiarity::default(),
             shape,
+            phrase,
         }
     }
 }

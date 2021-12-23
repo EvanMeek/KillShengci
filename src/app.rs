@@ -155,12 +155,19 @@ impl App {
                         });
                         ui.collapsing("多形式", |ui| {
                             for shape in &self.current_word.shape {
-                                ui.add(egui::Label::new(
-                                    RichText::new(&shape.0).text_style(egui::TextStyle::Button),
-                                ));
-                                ui.add(egui::Label::new(
-                                    RichText::new(&shape.1).text_style(egui::TextStyle::Button),
-                                ));
+                                ui.horizontal(|ui| {
+                                    ui.add(egui::Label::new(
+                                        RichText::new(&shape.0).text_style(egui::TextStyle::Button),
+                                    ));
+                                    ui.add(egui::Label::new(
+                                        RichText::new(&shape.1).text_style(egui::TextStyle::Button),
+                                    ));
+                                });
+                            }
+                        });
+                        ui.collapsing("词组", |ui| {
+                            for phrase in &self.current_word.phrase {
+                                ui.add(egui::Hyperlink::from_label_and_url(&phrase.0, &phrase.1));
                             }
                         });
                         ui.collapsing("用词分布", |ui| {});

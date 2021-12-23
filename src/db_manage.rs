@@ -1,7 +1,4 @@
-use std::{fmt::format, sync::Arc};
-
-use rusqlite::{named_params, params, types::FromSql, Connection, Rows};
-use serde::__private::de::IdentifierDeserializer;
+use rusqlite::{params, Connection};
 
 use crate::word::{Familiarity, Word};
 pub struct DBManage {
@@ -111,6 +108,25 @@ impl DBManage {
                 Err(e) => println!("execute sql failed: {}", e),
             }
         }
+        if let Ok(_result) = self.connection.execute(
+            r#"SELECT * FROM sqlite_master where type='table' and name='phrase'"#,
+            [],
+        ) {
+            match self.connection.execute(
+                r#"
+                CREATE TABLE "phrase"(
+                    "keyword" TEXT NOT NULL,
+                    "phrase" INTEGER NOT NULL,
+                    "link" TEXT NOT NULL,
+                    FOREIGN KEY("keyword") REFERENCES "word"("keyword")
+                );
+                "#,
+                [],
+            ) {
+                Ok(result) => println!("result: {}", result),
+                Err(e) => println!("execute sql failed: {}", e),
+            }
+        }
     }
     pub fn add_word(&self, word: &Word) -> Result<(), rusqlite::Error> {
         self.connection.execute(
@@ -157,6 +173,16 @@ impl DBManage {
                 (?1,?2,?3);
                 "#,
                 [word.keyword.as_ref().unwrap(), &shape.0, &shape.1],
+            )?;
+        }
+        for phrase in &word.phrase {
+            self.connection.execute(
+                r#"
+                INSERT INTO "phrase"
+                VALUES
+                (?1,?2,?3);
+                "#,
+                [word.keyword.as_ref().unwrap(), &phrase.0, &phrase.1],
             )?;
         }
         Ok(())
@@ -210,6 +236,17 @@ impl DBManage {
                 row.get_unwrap::<_, String>(1),
             ))
         }
+        // 获取word的phrase
+        let mut stmt = self
+            .connection
+            .prepare(r#"SELECT phrase, link FROM phrase WHERE keyword=?"#)?;
+        let mut phrase_rows = stmt.query(params![&word.keyword])?;
+        while let Some(row) = phrase_rows.next()? {
+            word.phrase.push((
+                row.get_unwrap::<_, String>(0),
+                row.get_unwrap::<_, String>(1),
+            ))
+        }
         Ok(word)
     }
     pub fn delete_word_by_keyword(&self, keyword: &String) -> Result<(), rusqlite::Error> {
@@ -238,6 +275,13 @@ impl DBManage {
         self.connection.execute(
             r#"
             DELETE FROM shape WHERE keyword=?
+            "#,
+            [keyword],
+        )?;
+        // 删除单词的phrase相关数据
+        self.connection.execute(
+            r#"
+            DELETE FROM phrase WHERE keyword=?
             "#,
             [keyword],
         )?;
