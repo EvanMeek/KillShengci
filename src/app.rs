@@ -107,51 +107,65 @@ impl App {
         ui.add_space(PADDING * 10.);
         // println!("{:#?}", self.current_word);
         if self.show_word_info {
-            ui.vertical(|ui| {
-                ui.collapsing("解释", |ui| {
-                    for explain in &self.current_word.explains {
-                        ui.add(egui::Label::new(
-                            RichText::new(&explain.0).text_style(egui::TextStyle::Button),
-                        ));
-                        ui.add(egui::Label::new(
-                            RichText::new(&explain.1).text_style(egui::TextStyle::Button),
-                        ));
-                    }
-                });
-                ui.collapsing("音节", |ui| {
-                    ui.add(egui::Label::new(
-                        RichText::new(self.current_word.tips.as_ref().unwrap())
-                            .text_style(TextStyle::Button),
-                    ));
-                });
-                ui.collapsing("音标", |ui| {
-                    ui.horizontal(|ui| {
-                        ui.add(egui::Label::new(
-                            RichText::new("英").text_style(egui::TextStyle::Button),
-                        ));
-                        ui.add(egui::Label::new(
-                            RichText::new(&self.current_word.phonetic.as_ref().unwrap().0)
-                                .text_style(egui::TextStyle::Button),
-                        ));
+            ScrollArea::vertical()
+                .auto_shrink([true; 2])
+                .show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        ui.collapsing("解释", |ui| {
+                            for explain in &self.current_word.explains {
+                                ui.add(egui::Label::new(
+                                    RichText::new(&explain.0).text_style(egui::TextStyle::Button),
+                                ));
+                                ui.add(egui::Label::new(
+                                    RichText::new(&explain.1).text_style(egui::TextStyle::Button),
+                                ));
+                            }
+                        });
+                        ui.collapsing("音节", |ui| {
+                            ui.add(egui::Label::new(
+                                RichText::new(self.current_word.tips.as_ref().unwrap())
+                                    .text_style(TextStyle::Button),
+                            ));
+                        });
+                        ui.collapsing("音标", |ui| {
+                            ui.horizontal(|ui| {
+                                ui.add(egui::Label::new(
+                                    RichText::new("英").text_style(egui::TextStyle::Button),
+                                ));
+                                ui.add(egui::Label::new(
+                                    RichText::new(&self.current_word.phonetic.as_ref().unwrap().0)
+                                        .text_style(egui::TextStyle::Button),
+                                ));
+                            });
+                            ui.horizontal(|ui| {
+                                ui.add(egui::Label::new(
+                                    RichText::new("美").text_style(egui::TextStyle::Button),
+                                ));
+                                ui.add(egui::Label::new(
+                                    RichText::new(&self.current_word.phonetic.as_ref().unwrap().1)
+                                        .text_style(egui::TextStyle::Button),
+                                ));
+                            });
+                        });
+                        ui.collapsing("起源", |ui| {
+                            ui.add(egui::Label::new(
+                                RichText::new(self.current_word.etymons.as_ref().unwrap())
+                                    .text_style(egui::TextStyle::Button),
+                            ));
+                        });
+                        ui.collapsing("多形式", |ui| {
+                            for shape in &self.current_word.shape {
+                                ui.add(egui::Label::new(
+                                    RichText::new(&shape.0).text_style(egui::TextStyle::Button),
+                                ));
+                                ui.add(egui::Label::new(
+                                    RichText::new(&shape.1).text_style(egui::TextStyle::Button),
+                                ));
+                            }
+                        });
+                        ui.collapsing("用词分布", |ui| {});
                     });
-                    ui.horizontal(|ui| {
-                        ui.add(egui::Label::new(
-                            RichText::new("美").text_style(egui::TextStyle::Button),
-                        ));
-                        ui.add(egui::Label::new(
-                            RichText::new(&self.current_word.phonetic.as_ref().unwrap().1)
-                                .text_style(egui::TextStyle::Button),
-                        ));
-                    });
                 });
-                ui.collapsing("起源", |ui| {
-                    ui.add(egui::Label::new(
-                        RichText::new(self.current_word.etymons.as_ref().unwrap())
-                            .text_style(egui::TextStyle::Button),
-                    ));
-                });
-                ui.collapsing("用词分布", |ui| {});
-            });
         }
     }
     fn configuration_fonts(&self, ctx: &CtxRef) {

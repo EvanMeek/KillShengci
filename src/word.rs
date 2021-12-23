@@ -25,6 +25,8 @@ pub struct Word {
     pub distribution_data: Vec<(i64, String)>,
     // 熟练程度
     pub familiarity: Familiarity,
+    // 形式
+    pub shape: Vec<(String, String)>,
 }
 
 impl Word {
@@ -38,6 +40,23 @@ impl Word {
         let mut explains: Vec<(String, String)> = vec![];
         let mut etymons: Option<String> = Some("".to_string());
         let mut distribution_data: Vec<(i64, String)> = vec![];
+        let mut shape: Vec<(String, String)> = vec![];
+        let mut phrase: Vec<(String, String)> = vec![];
+        if let Some(shapes) = document.find(Class("shape")).next() {
+            let shape_types: Vec<String> = shapes
+                .find(Name("label"))
+                .into_iter()
+                .map(|shape_type| shape_type.text())
+                .collect();
+            let shape_words: Vec<String> = shapes
+                .find(Name("a"))
+                .into_iter()
+                .map(|shape_word| shape_word.text().trim().to_string())
+                .collect();
+            for i in 0..shape_types.len() {
+                shape.push((shape_types[i].clone(), shape_words[i].clone()))
+            }
+        }
         // 词续
         for node in document.find(Class("word-cont")) {
             let keyword_node = node.find(Class("keyword")).next().unwrap();
@@ -95,6 +114,7 @@ impl Word {
                 }
             }
         };
+        // 形式
         Word {
             keyword,
             tips,
@@ -104,6 +124,7 @@ impl Word {
             etymons,
             distribution_data,
             familiarity: Familiarity::default(),
+            shape,
         }
     }
 }

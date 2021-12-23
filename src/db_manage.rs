@@ -82,7 +82,27 @@ impl DBManage {
                 CREATE TABLE "distribution_data"(
                     "keyword" TEXT NOT NULL,
                     "frequency" INTEGER NOT NULL,
-                    "keyword_explain" TEXT NOT NULL
+                    "keyword_explain" TEXT NOT NULL,
+                    FOREIGN KEY("keyword") REFERENCES "word"("keyword")
+                );
+                "#,
+                [],
+            ) {
+                Ok(result) => println!("result: {}", result),
+                Err(e) => println!("execute sql failed: {}", e),
+            }
+        }
+        if let Ok(_result) = self.connection.execute(
+            r#"SELECT * FROM sqlite_master where type='table' and name='shape'"#,
+            [],
+        ) {
+            match self.connection.execute(
+                r#"
+                CREATE TABLE "shape"(
+                    "keyword" TEXT NOT NULL,
+                    "type" INTEGER NOT NULL,
+                    "word" TEXT NOT NULL,
+                    FOREIGN KEY("keyword") REFERENCES "word"("keyword")
                 );
                 "#,
                 [],
@@ -129,26 +149,37 @@ impl DBManage {
                 [word.keyword.as_ref().unwrap(), &data.0.to_string(), &data.1],
             )?;
         }
+        for shape in &word.shape {
+            self.connection.execute(
+                r#"
+                INSERT INTO "shape"
+                VALUES
+                (?1,?2,?3);
+                "#,
+                [word.keyword.as_ref().unwrap(), &shape.0, &shape.1],
+            )?;
+        }
         Ok(())
     }
     pub fn find_word_by_keyword(&self, keyword: &String) -> Result<Word, rusqlite::Error> {
         let mut word = Word::default();
+        // 获取基本word信息
         word = self.connection.query_row(
             r#"SELECT keyword,tips,level,phonetic_us,phonetic_uk,etymons,familiarity FROM word WHERE keyword=?1"#,
             [keyword],
             |row| {
-                    word.keyword= row.get_unwrap(0);
-                    word.tips= row.get_unwrap(1);
-                    word.level= row.get_unwrap(2);
-                    word.phonetic= Some((row.get_unwrap(3), row.get_unwrap(4)));
-                    word.explains= vec![];
-                    word.etymons= row.get_unwrap(5);
-                    word.distribution_data= vec![];
+                word.keyword= row.get_unwrap(0);
+                word.tips= row.get_unwrap(1);
+                word.level= row.get_unwrap(2);
+                word.phonetic= Some((row.get_unwrap(3), row.get_unwrap(4)));
+                word.explains= vec![];
+                word.etymons= row.get_unwrap(5);
+                word.distribution_data= vec![];
                 word.familiarity= Familiarity::from(row.get_unwrap(6));
                 Ok(word)
             },
         ).unwrap();
-
+        // 获取word的explains
         let mut stmt = self
             .connection
             .prepare(r#"SELECT part_of_speech, explain FROM explains WHERE keyword=?"#)?;
@@ -159,7 +190,7 @@ impl DBManage {
                 row.get_unwrap::<_, String>(1),
             ));
         }
-
+        // 获取word的distribution_data
         let mut stmt = self.connection.prepare(
             r#"SELECT frequency, keyword_explain FROM distribution_data WHERE keyword=?"#,
         )?;
@@ -168,24 +199,45 @@ impl DBManage {
             word.distribution_data
                 .push((row.get_unwrap::<_, i64>(0), row.get_unwrap::<_, String>(1)))
         }
+        // 获取word的shape
+        let mut stmt = self
+            .connection
+            .prepare(r#"SELECT type, word FROM shape WHERE keyword=?"#)?;
+        let mut shape_rows = stmt.query(params![&word.keyword])?;
+        while let Some(row) = shape_rows.next()? {
+            word.shape.push((
+                row.get_unwrap::<_, String>(0),
+                row.get_unwrap::<_, String>(1),
+            ))
+        }
         Ok(word)
     }
     pub fn delete_word_by_keyword(&self, keyword: &String) -> Result<(), rusqlite::Error> {
+        // 删除单词的word相关数据
         self.connection.execute(
             r#"
             DELETE FROM word WHERE keyword=?
             "#,
             [&keyword],
         )?;
+        // 删除单词的explains相关数据
         self.connection.execute(
             r#"
             DELETE FROM explains WHERE keyword=?
             "#,
             [keyword],
         )?;
+        // 删除单词的distribution_data相关数据
         self.connection.execute(
             r#"
             DELETE FROM distribution_data WHERE keyword=?
+            "#,
+            [keyword],
+        )?;
+        // 删除单词的shape相关数据
+        self.connection.execute(
+            r#"
+            DELETE FROM shape WHERE keyword=?
             "#,
             [keyword],
         )?;
