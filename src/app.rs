@@ -1,7 +1,7 @@
 use eframe::{
     egui::{
         self, Button, CentralPanel, Color32, CtxRef, FontData, FontDefinitions, FontFamily,
-        RichText, ScrollArea, SidePanel, TextEdit, TextStyle, TopBottomPanel,
+        RichText, ScrollArea, SidePanel, TextEdit, TextStyle, TopBottomPanel, Vec2,
     },
     epi::{self, Frame, Storage},
 };
@@ -12,7 +12,7 @@ use crate::{
     word::{Familiarity, Word},
 };
 
-const _PADDING: f32 = 5.;
+const PADDING: f32 = 20.;
 const CYAN: Color32 = Color32::from_rgb(0, 255, 255);
 #[derive(Default)]
 pub struct App {
@@ -23,6 +23,7 @@ pub struct App {
     radio_familiarity: Familiarity,
     show_word_info: bool,
     current_word: Word,
+    search_word: String,
 }
 impl App {
     fn new() -> Self {
@@ -59,7 +60,21 @@ impl App {
             ScrollArea::vertical()
                 .auto_shrink([true; 2])
                 .show(ui, |ui| {
-                    for word in self.db.get_words(familiarity).unwrap() {
+                    let search_text = ui.add(
+                        TextEdit::singleline(&mut self.search_word)
+                            .hint_text("TODO")
+                            .desired_width(100.),
+                    );
+                    let mut word_list: Vec<Word> = self.db.get_words(familiarity).unwrap();
+                    if search_text.changed() {
+                        if &self.search_word != "" {
+                            match self.db.get_words_by_regexp_keyword(&self.search_word) {
+                                Ok(words) => word_list = words,
+                                Err(_) => unreachable!(),
+                            }
+                        }
+                    }
+                    for word in word_list {
                         let word_resp = ui.add(Button::new(word.keyword.as_ref().unwrap()).small());
                         if word_resp.clicked() {
                             self.show_word_info = true;
@@ -84,6 +99,7 @@ impl App {
                     }
                 });
         });
+        ui.add_space(PADDING * 10.);
         // println!("{:#?}", self.current_word);
         if self.show_word_info {
             ui.vertical(|ui| {
