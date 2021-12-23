@@ -24,6 +24,7 @@ pub struct App {
     show_word_info: bool,
     current_word: Word,
     search_word: String,
+    word_list: Vec<Word>,
 }
 impl App {
     fn new() -> Self {
@@ -62,18 +63,22 @@ impl App {
                 .show(ui, |ui| {
                     let search_text = ui.add(
                         TextEdit::singleline(&mut self.search_word)
-                            .hint_text("TODO")
+                            .hint_text("模糊搜索")
                             .desired_width(100.),
                     );
-                    let mut word_list: Vec<Word> = self.db.get_words(familiarity).unwrap();
+                    // 如果单词列表为空，那么将其设置为数据库中的单词列表
+                    if self.word_list.len() == 0 || self.search_word == "" {
+                        self.word_list = self.db.get_words(familiarity).unwrap();
+                    }
                     if search_text.changed() {
                         if &self.search_word != "" {
                             match self.db.get_words_by_regexp_keyword(&self.search_word) {
-                                Ok(words) => word_list = words,
+                                Ok(words) => self.word_list = words,
                                 Err(_) => unreachable!(),
                             }
                         }
                     }
+                    let word_list = self.word_list.clone();
                     for word in word_list {
                         let word_resp = ui.add(Button::new(word.keyword.as_ref().unwrap()).small());
                         if word_resp.clicked() {
