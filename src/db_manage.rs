@@ -1,11 +1,9 @@
-use std::sync::Arc;
+use std::{fmt::format, sync::Arc};
 
-use rusqlite::{params, types::FromSql, Connection, Rows};
+use rusqlite::{named_params, params, types::FromSql, Connection, Rows};
 use serde::__private::de::IdentifierDeserializer;
 
-use crate::{
-    word::{Word, Familiarity},
-};
+use crate::word::{Familiarity, Word};
 pub struct DBManage {
     connection: Connection,
 }
@@ -216,5 +214,21 @@ impl DBManage {
             self.delete_word_by_keyword(&word.keyword.unwrap())?;
         }
         Ok(())
+    }
+    pub fn get_words_by_regexp_keyword(
+        &self,
+        keyword_reg: &str,
+    ) -> Result<Vec<Word>, rusqlite::Error> {
+        let sql = format!(
+            r#"SELECT keyword FROM word WHERE keyword LIKE "{}%";"#,
+            &keyword_reg
+        );
+        let mut stmt = self.connection.prepare(&sql)?;
+        let words = stmt
+            .query_map::<Word, _, _>([], |row| {
+                self.find_word_by_keyword(&row.get::<_, String>(0).unwrap())
+            })?
+            .collect::<Result<Vec<Word>, _>>()?;
+        Ok(words)
     }
 }
