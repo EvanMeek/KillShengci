@@ -268,12 +268,20 @@ impl epi::App for App {
             ui.horizontal(|ui| {
                 ui.checkbox(&mut self.setting, "设置");
                 ui.separator();
-                let _text = ui.add(
+                let text_resp = ui.add(
                     TextEdit::singleline(&mut self.capture_word)
-                        .hint_text("请输入一个单词以捕获")
+                        .hint_text("请输入一个单词以捕获|回车或点击按钮")
                         .desired_width(250.)
                         .text_style(TextStyle::Button),
                 );
+                // 回车时进行捕获
+                if text_resp.lost_focus() {
+                    if self.capture_word != "" {
+                        self.handle_capture_word();
+                        self.capture_word = String::new();
+                    }
+                }
+                // 点击按钮时捕获
                 if ui
                     .add(Button::new(RichText::new("添加到生词表！").color(CYAN)))
                     .clicked()
