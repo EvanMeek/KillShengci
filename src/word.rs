@@ -48,7 +48,6 @@ impl Word {
         let mut phrase: Vec<(String, String)> = vec![];
         // 单词词组
         if let Some(phrase_node) = document.find(Attr("class", "layout anno")).next() {
-            println!("node: {:#?}", phrase_node);
             for phrase_node in phrase_node.find(Name("li")).into_iter() {
                 let phrase_node = phrase_node.find(Name("a")).next();
 

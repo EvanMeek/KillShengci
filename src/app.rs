@@ -1,7 +1,9 @@
 use eframe::{
     egui::{
-        self, Button, CentralPanel, Color32, CtxRef, FontData, FontDefinitions, FontFamily,
-        RichText, ScrollArea, SidePanel, TextEdit, TextStyle, TopBottomPanel, Vec2,
+        self,
+        plot::{Bar, BarChart, Legend, Plot},
+        Button, CentralPanel, Color32, CtxRef, FontData, FontDefinitions, FontFamily, RichText,
+        ScrollArea, SidePanel, TextEdit, TextStyle, TopBottomPanel, Vec2,
     },
     epi::{self, Frame, Storage},
 };
@@ -104,7 +106,7 @@ impl App {
                     }
                 });
         });
-        ui.add_space(PADDING * 10.);
+        ui.add_space(PADDING);
         // println!("{:#?}", self.current_word);
         if self.show_word_info {
             ScrollArea::vertical()
@@ -170,7 +172,27 @@ impl App {
                                 ui.add(egui::Hyperlink::from_label_and_url(&phrase.0, &phrase.1));
                             }
                         });
-                        ui.collapsing("用词分布", |ui| {});
+                        ui.collapsing("用词分布", |ui| {
+                            let mut data_chart: Vec<BarChart> = vec![];
+                            for (i, data) in self.current_word.distribution_data.iter().enumerate()
+                            {
+                                let chart =
+                                    BarChart::new(vec![Bar::new((i * 20) as f64, data.0 as f64)])
+                                        .name(&data.1)
+                                        .width(20.);
+                                data_chart.push(chart);
+                            }
+                            Plot::new("用词分布")
+                                .legend(Legend::default())
+                                .data_aspect(1.)
+                                .height(200.)
+                                .width(400.)
+                                .show(ui, |plot_ui| {
+                                    for chart in data_chart {
+                                        plot_ui.bar_chart(chart);
+                                    }
+                                });
+                        });
                     });
                 });
         }
