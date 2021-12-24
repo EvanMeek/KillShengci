@@ -1,0 +1,7 @@
+#+TITLE:  README
+
+预览图
+
+[[file:screenshot/kill-ShengCi-screenshot.png]]
+* 依赖
++ sqlite3.x
