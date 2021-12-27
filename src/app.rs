@@ -2,8 +2,8 @@ use eframe::{
     egui::{
         self,
         plot::{Bar, BarChart, Legend, Plot},
-        Button, CentralPanel, Color32, CtxRef, FontData, FontDefinitions, FontFamily, RichText,
-        ScrollArea, SidePanel, TextEdit, TextStyle, TopBottomPanel, Vec2,
+        style, Button, CentralPanel, Color32, CtxRef, FontData, FontDefinitions, FontFamily,
+        RichText, ScrollArea, SidePanel, TextEdit, TextStyle, TopBottomPanel, Vec2,
     },
     epi::{self, Frame, Storage},
 };
@@ -30,7 +30,10 @@ pub struct App {
 }
 impl App {
     fn new() -> Self {
-        Self::default()
+        Self {
+            msg: "杀死生词".to_string(),
+            ..Self::default()
+        }
     }
     fn handle_delete_dict(&mut self, familiarity: &Familiarity) {
         match self.db.delete_word_by_familiarity(familiarity) {
@@ -278,7 +281,54 @@ impl epi::App for App {
                     });
                 });
         }
+        TopBottomPanel::bottom("my_bottom_panel")
+            .min_height(10.)
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.checkbox(&mut self.setting, "设置");
+                    ui.separator();
+                    let text_resp = ui.add(
+                        TextEdit::singleline(&mut self.capture_word)
+                            .hint_text("请输入一个单词以捕获|回车或点击按钮")
+                            .desired_width(250.)
+                            .text_style(TextStyle::Button),
+                    );
+                    // 回车时进行捕获
+                    if text_resp.lost_focus() {
+                        if self.capture_word != "" {
+                            self.handle_capture_word();
+                            self.capture_word = String::new();
+                        }
+                    }
+                    // 点击按钮时捕获
+                    if ui
+                        .add(Button::new(RichText::new("添加到生词表！").color(CYAN)))
+                        .clicked()
+                    {
+                        self.handle_capture_word();
+                        self.capture_word = String::new();
+                    }
+                    ui.separator();
 
+                    ui.horizontal(|ui| {
+                        ui.radio_value(
+                            &mut self.radio_familiarity,
+                            Familiarity::NewWord,
+                            "显示生词",
+                        );
+                        ui.radio_value(
+                            &mut self.radio_familiarity,
+                            Familiarity::Familiarity,
+                            "显示熟词",
+                        );
+                        ui.radio_value(
+                            &mut self.radio_familiarity,
+                            Familiarity::Memorized,
+                            "显示记住",
+                        );
+                    });
+                });
+            });
         CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered(|ui| {
                 ui.heading(&self.msg);
@@ -305,52 +355,6 @@ impl epi::App for App {
                         ui,
                     ),
                 }
-            });
-        });
-        TopBottomPanel::bottom("my_bottom_panel").show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.checkbox(&mut self.setting, "设置");
-                ui.separator();
-                let text_resp = ui.add(
-                    TextEdit::singleline(&mut self.capture_word)
-                        .hint_text("请输入一个单词以捕获|回车或点击按钮")
-                        .desired_width(250.)
-                        .text_style(TextStyle::Button),
-                );
-                // 回车时进行捕获
-                if text_resp.lost_focus() {
-                    if self.capture_word != "" {
-                        self.handle_capture_word();
-                        self.capture_word = String::new();
-                    }
-                }
-                // 点击按钮时捕获
-                if ui
-                    .add(Button::new(RichText::new("添加到生词表！").color(CYAN)))
-                    .clicked()
-                {
-                    self.handle_capture_word();
-                    self.capture_word = String::new();
-                }
-                ui.separator();
-
-                ui.horizontal(|ui| {
-                    ui.radio_value(
-                        &mut self.radio_familiarity,
-                        Familiarity::NewWord,
-                        "显示生词",
-                    );
-                    ui.radio_value(
-                        &mut self.radio_familiarity,
-                        Familiarity::Familiarity,
-                        "显示熟词",
-                    );
-                    ui.radio_value(
-                        &mut self.radio_familiarity,
-                        Familiarity::Memorized,
-                        "显示记住",
-                    );
-                });
             });
         });
     }
